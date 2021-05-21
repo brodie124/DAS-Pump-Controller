@@ -28,6 +28,8 @@ void PumpManager::start_pump(Pump pump) {
     #endif
 
     digitalWrite(pump.output_enable_pin, ENABLE_PUMP_STATE);
+
+    pump.is_started = true;
     pump.time_started = millis();
 } 
 
@@ -47,6 +49,8 @@ void PumpManager::stop_pump(Pump pump) {
     #endif
 
     digitalWrite(pump.output_enable_pin, DISABLE_PUMP_STATE);
+
+    pump.is_started = false;
     pump.time_stopped = millis();
 }
 
