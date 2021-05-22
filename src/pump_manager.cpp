@@ -132,7 +132,7 @@ unsigned int PumpManager::get_all_duty_pumps(Pump *pumps_buffer) {
     return num_pumps_returned;
 }
 
-unsigned int PumpManager::get_all_assist_pumps(Pump *pumps_buffer, unsigned short assist_group) {
+unsigned int PumpManager::get_all_assist_pumps(Pump *pumps_buffer, short assist_group) {
     unsigned int num_pumps_returned = 0;
 
     for(unsigned int i = 0; i < this->num_assigned_pumps; i++) {

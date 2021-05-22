@@ -8,7 +8,7 @@ class PumpManager {
         bool add_pump(Pump pump);
 
         unsigned int get_all_duty_pumps(Pump *pumps_buffer);
-        unsigned int get_all_assist_pumps(Pump *pumps_buffer, unsigned short assist_group);
+        unsigned int get_all_assist_pumps(Pump *pumps_buffer, short assist_group);
         unsigned int get_all_standby_pumps(Pump *pumps_buffer);
 
         void start_pump(Pump pump);

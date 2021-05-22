@@ -12,6 +12,8 @@ void test_pump_manager() {
   Pump pump_buffer[MAX_PUMPS];
   int returned;
 
+  Pump test = get_default_struct_pump();
+
   Pump dutyPump = {
     .output_enable_pin = 1,
     .input_running_pin = 0,

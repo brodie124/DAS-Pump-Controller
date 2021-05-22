@@ -13,20 +13,25 @@
 #define DISABLE_PUMP_STATE LOW
 
 struct Pump {
-    unsigned short output_enable_pin;
-    unsigned short input_running_pin;
+    short output_enable_pin;
+    short input_running_pin;
 
     bool is_duty;
     bool is_assist;
     bool is_standby;
 
-    unsigned short assist_group;
+    short assist_group;
 
     bool is_running;
     bool is_started;
+
+    bool is_replaced;
+    short replacement_enable_pin;
     
     unsigned long time_started;
     unsigned long time_stopped;
 };
+
+Pump get_default_struct_pump();
 
 #endif
