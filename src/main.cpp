@@ -91,11 +91,23 @@ void setup() {
 
 
   Serial.println("Calling test_pump_manager");
-  test_pump_manager();
+  //test_pump_manager();
+
+
+  // pinMode(8, OUTPUT);
+
+  digitalWrite(OUTPUT_PUMP_6_ENABLE_PIN, LOW);
+
+  delay(10 * 1000);
+
+  digitalWrite(OUTPUT_PUMP_6_ENABLE_PIN, HIGH);
+  
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
+
+  
 }
 
 
