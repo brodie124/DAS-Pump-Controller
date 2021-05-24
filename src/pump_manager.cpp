@@ -1,8 +1,4 @@
-#include <Arduino.h>
-#include <SoftwareSerial.h>
-
 #include "pump_manager.h"
-
 
 PumpManager::PumpManager() {
     num_duty_pumps = 0;
@@ -11,6 +7,41 @@ PumpManager::PumpManager() {
 
     num_assigned_pumps = 0;
 }
+
+
+void PumpManager::update() {
+    // update which pumps are currently running
+    this->pumps[0].is_running = (digitalRead(INPUT_PUMP_1_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[1].is_running = (digitalRead(INPUT_PUMP_2_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[2].is_running = (digitalRead(INPUT_PUMP_3_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[3].is_running = (digitalRead(INPUT_PUMP_4_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[4].is_running = (digitalRead(INPUT_PUMP_5_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[5].is_running = (digitalRead(INPUT_PUMP_6_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+
+    unsigned long currentTimeMillis = millis();
+    for(int i = 0; i < MAX_PUMPS; i++) {
+        
+        // if the pump has not been started then we do not need to concern ourselves with its state
+        if(!this->pumps[i].is_started)
+            continue;
+
+        // the MAXIMUM_START_UP_TIME must be allowed to pass before we can assume the pump has failed
+        if(this->pumps[i].is_running || this->pumps[i].time_started + MAXIMUM_START_UP_TIME > currentTimeMillis)
+            continue;
+
+        // at this point we can safely assume that the pump has not started and the maximum start-up time has passed.
+        // we must now check if the pump has already been replaced by another pump... if it has then we do not care
+        if(this->pumps[i].is_replaced && this->pumps[i].replacement_enable_pin >= 0)
+            continue; 
+
+        
+        // find an available replacement pump 
+        // TODO: this
+    }
+}
+
+
+
 
 void PumpManager::start_pump(Pump pump) {
     if(pump.output_enable_pin < 0) {
@@ -27,7 +58,7 @@ void PumpManager::start_pump(Pump pump) {
         }
     #endif
 
-    digitalWrite(pump.output_enable_pin, ENABLE_PUMP_STATE);
+    digitalWrite(pump.output_enable_pin, PUMP_ENABLE_PIN_ON);
 
     pump.is_started = true;
     pump.time_started = millis();
@@ -48,7 +79,7 @@ void PumpManager::stop_pump(Pump pump) {
         }
     #endif
 
-    digitalWrite(pump.output_enable_pin, DISABLE_PUMP_STATE);
+    digitalWrite(pump.output_enable_pin, PUMP_ENABLE_PIN_OFF);
 
     pump.is_started = false;
     pump.time_stopped = millis();

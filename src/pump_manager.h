@@ -1,5 +1,7 @@
+#include <Arduino.h>
+#include <SoftwareSerial.h>
 #include "bcu_definitions.h"
-
+#include "pin_configuration.h"
 
 class PumpManager {
     public: 

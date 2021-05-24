@@ -12,11 +12,14 @@ Pump get_default_struct_pump() {
 
         .assist_group = -1,
 
-        .is_running = false,
         .is_started = false,
+        .is_running = false,
 
         .is_replaced = false,
         .replacement_enable_pin = -1,
+
+        .is_replacing = false,
+        .replacing_enable_pin = -1,
 
         .time_started = 0,
         .time_stopped = 0
