@@ -52,16 +52,17 @@ void PumpManager::start_pump(Pump pump) {
         return;
     }
 
-    #ifdef DEBUG
-        if(pump.is_started) {
-            Serial.println("PumpManager::start_pump - pump already started... continuing anyway");
-        }
-    #endif
+    if(pump.is_started) {
+        #ifdef DEBUG
+                Serial.println("PumpManager::start_pump - pump already started... continuing anyway");
+        #endif
+    } else {
+        pump.time_started = millis();
+    }
 
     digitalWrite(pump.output_enable_pin, PUMP_ENABLE_PIN_ON);
-
     pump.is_started = true;
-    pump.time_started = millis();
+    
 } 
 
 void PumpManager::stop_pump(Pump pump) {
@@ -73,16 +74,17 @@ void PumpManager::stop_pump(Pump pump) {
         return;
     }
 
-    #ifdef DEBUG
-        if(!pump.is_started) {
-            Serial.println("PumpManager::stop_pump - pump already stopped... continuing anyway");
-        }
-    #endif
+    if(!pump.is_started) {
+        #ifdef DEBUG
+                Serial.println("PumpManager::stop_pump - pump already stopped... continuing anyway");
+        #endif
+    } else {
+        pump.time_stopped = millis();
+    }
 
     digitalWrite(pump.output_enable_pin, PUMP_ENABLE_PIN_OFF);
-
     pump.is_started = false;
-    pump.time_stopped = millis();
+    
 }
 
 bool PumpManager::add_pump(Pump pump) {
