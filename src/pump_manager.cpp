@@ -43,8 +43,8 @@ void PumpManager::update() {
 
 
 
-void PumpManager::start_pump(Pump pump) {
-    if(pump.output_enable_pin < 0) {
+void PumpManager::start_pump(Pump *pump) {
+    if(pump->output_enable_pin < 0) {
         #ifdef DEBUG
             Serial.println("PumpManager::start_pump - pump not configured properly...");
         #endif
@@ -52,21 +52,21 @@ void PumpManager::start_pump(Pump pump) {
         return;
     }
 
-    if(pump.is_started) {
+    if(pump->is_started) {
         #ifdef DEBUG
                 Serial.println("PumpManager::start_pump - pump already started... continuing anyway");
         #endif
     } else {
-        pump.time_started = millis();
+        pump->time_started = millis();
     }
 
-    digitalWrite(pump.output_enable_pin, PUMP_ENABLE_PIN_ON);
-    pump.is_started = true;
+    digitalWrite(pump->output_enable_pin, PUMP_ENABLE_PIN_ON);
+    pump->is_started = true;
     
 } 
 
-void PumpManager::stop_pump(Pump pump) {
-    if(pump.output_enable_pin < 0) {
+void PumpManager::stop_pump(Pump *pump) {
+    if(pump->output_enable_pin < 0) {
         #ifdef DEBUG
             Serial.println("PumpManager::stop_pump - pump not configured properly...");
         #endif
@@ -74,16 +74,16 @@ void PumpManager::stop_pump(Pump pump) {
         return;
     }
 
-    if(!pump.is_started) {
+    if(!pump->is_started) {
         #ifdef DEBUG
                 Serial.println("PumpManager::stop_pump - pump already stopped... continuing anyway");
         #endif
     } else {
-        pump.time_stopped = millis();
+        pump->time_stopped = millis();
     }
 
-    digitalWrite(pump.output_enable_pin, PUMP_ENABLE_PIN_OFF);
-    pump.is_started = false;
+    digitalWrite(pump->output_enable_pin, PUMP_ENABLE_PIN_OFF);
+    pump->is_started = false;
     
 }
 

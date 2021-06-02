@@ -13,8 +13,8 @@ class PumpManager {
         unsigned int get_all_assist_pumps(Pump *pumps_buffer, short assist_group);
         unsigned int get_all_standby_pumps(Pump *pumps_buffer);
 
-        void start_pump(Pump pump);
-        void stop_pump(Pump pump);
+        void start_pump(Pump *pump);
+        void stop_pump(Pump *pump);
 
         void update();
 

@@ -55,52 +55,70 @@ void loop() {
   bool high_probe_active = digitalRead(LEVEL_SENSOR_LEVEL_1_PIN);
   bool pump_1_signal_active = digitalRead(INPUT_PUMP_1_RUNNING_PIN);
 
+  duty_pump.is_running = (digitalRead(INPUT_PUMP_1_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+
   unsigned long current_time_millis = millis();
 
-  if(low_probe_active == HIGH) {
+  if(low_probe_active == PROBE_SIGNAL_PIN_OFF) {
     low_probe_time_last_high = current_time_millis;
   }
 
-  if(high_probe_active == HIGH) {
+  if(high_probe_active == PROBE_SIGNAL_PIN_OFF) {
     high_probe_time_last_high = current_time_millis;
   }
 
-  if(pump_1_signal_active == HIGH) {
+  if(pump_1_signal_active == PUMP_RUNNING_PIN_OFF) {
     pump_1_signal_time_last_active = current_time_millis;
   }
 
 
-  if(low_probe_active == PROBE_SIGNAL_PIN_ON && high_probe_time_last_high - current_time_millis > 5000) {
+  if(low_probe_active == PROBE_SIGNAL_PIN_ON && current_time_millis - high_probe_time_last_high > 5000) {
     // low level sensor is now ACTIVE and has been for over 1 second.
     // pumps cannot be turned off whilst this is active.
   }
 
 
 
-  if(high_probe_active == PROBE_SIGNAL_PIN_OFF && high_probe_time_last_high - current_time_millis > 5000) {
+  if(high_probe_active == PROBE_SIGNAL_PIN_ON && current_time_millis - high_probe_time_last_high > 5000) {
     // high level sensor is now ACTIVE and has been for over 1 second
     // pumps must be switched on if they are not already whilst this is active.
 
+    //
     Serial.println("High probe has been active for over 1 second... calling upon duty pump");
+    Serial.print("Time since pump started... ");
+    Serial.println(current_time_millis - duty_pump.time_started);
 
-    pumpManager.start_pump(duty_pump);
+    Serial.print("Pump is running? ");
+    Serial.println(duty_pump.is_running ? "Yes" : "No");
 
-    if(duty_pump.is_started && !duty_pump.is_running && duty_pump.time_started - current_time_millis > MAXIMUM_START_UP_TIME) {
+    Serial.print("Pump is started? ");
+    Serial.println(duty_pump.is_started ? "Yes" : "No");
+
+    // Serial.print("Pump 1 start time = ");
+    // Serial.println(duty_pump.time_started);
+
+    pumpManager.start_pump(&duty_pump);
+
+    if(duty_pump.is_started && !duty_pump.is_running && current_time_millis > 30000) {
       // pump was started more than 120 seconds ago but still isn't running.
       // fire up the standby pump as a result
 
-      pumpManager.start_pump(standby_pump);
-
       Serial.println("Starting standby pump - duty pump called upon over 120 seconds ago and is not running...");
+      pumpManager.start_pump(&standby_pump);
+
+      
+    } else {
+      Serial.println("Stopping standby");
+      pumpManager.stop_pump(&standby_pump);
     }
   }
   
 
 
-  if(low_probe_active == HIGH && high_probe_active == HIGH) {
+  if(low_probe_active == PROBE_SIGNAL_PIN_OFF && high_probe_active == PROBE_SIGNAL_PIN_OFF) {
       Serial.println("Both water level probes deactived... stopping both pumps...");
-      pumpManager.stop_pump(duty_pump);
-      pumpManager.stop_pump(standby_pump);
+      pumpManager.stop_pump(&duty_pump);
+      pumpManager.stop_pump(&standby_pump);
   }
 
 
