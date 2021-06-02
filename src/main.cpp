@@ -43,11 +43,13 @@ void setup() {
   duty_pump.is_duty = false;
   duty_pump.is_assist = false;
   duty_pump.is_standby = true;
-  
+
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
+
+  pumpManager.update();
 
   bool low_probe_active = digitalRead(LEVEL_SENSOR_LOW_PIN);
   bool high_probe_active = digitalRead(LEVEL_SENSOR_LEVEL_1_PIN);
@@ -68,14 +70,14 @@ void loop() {
   }
 
 
-  if(low_probe_active == LOW && high_probe_time_last_high - current_time_millis > 1000) {
+  if(low_probe_active == PROBE_SIGNAL_PIN_ON && high_probe_time_last_high - current_time_millis > 5000) {
     // low level sensor is now ACTIVE and has been for over 1 second.
     // pumps cannot be turned off whilst this is active.
   }
 
 
 
-  if(high_probe_active == LOW && high_probe_time_last_high - current_time_millis > 1000) {
+  if(high_probe_active == PROBE_SIGNAL_PIN_OFF && high_probe_time_last_high - current_time_millis > 5000) {
     // high level sensor is now ACTIVE and has been for over 1 second
     // pumps must be switched on if they are not already whilst this is active.
 
@@ -83,7 +85,7 @@ void loop() {
 
     pumpManager.start_pump(duty_pump);
 
-    if(duty_pump.is_started && !duty_pump.is_running && duty_pump.time_started - current_time_millis > 120000) {
+    if(duty_pump.is_started && !duty_pump.is_running && duty_pump.time_started - current_time_millis > MAXIMUM_START_UP_TIME) {
       // pump was started more than 120 seconds ago but still isn't running.
       // fire up the standby pump as a result
 
