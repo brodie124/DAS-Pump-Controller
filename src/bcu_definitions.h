@@ -42,6 +42,6 @@ struct Pump {
     unsigned long time_stopped;
 };
 
-Pump get_default_struct_pump();
+Pump* get_default_struct_pump();
 
 #endif

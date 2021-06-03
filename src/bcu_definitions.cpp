@@ -1,8 +1,8 @@
 #include "bcu_definitions.h"
 
-Pump get_default_struct_pump() {
+Pump* get_default_struct_pump() {
 
-    return Pump {
+    return new Pump {
         .output_enable_pin = -1,
         .input_running_pin = -1,
 

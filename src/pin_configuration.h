@@ -51,8 +51,8 @@
 #define PUMP_RUNNING_PIN_ON LOW
 #define PUMP_RUNNING_PIN_OFF HIGH
 
-#define PROBE_SIGNAL_PIN_ON LOW
-#define PROBE_SIGNAL_PIN_OFF HIGH
+#define PROBE_SIGNAL_PIN_ON HIGH
+#define PROBE_SIGNAL_PIN_OFF LOW
 
 void initialise_pins();
 
