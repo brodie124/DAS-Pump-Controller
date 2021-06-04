@@ -9,24 +9,30 @@ PumpManager::PumpManager() {
 }
 
 
-void PumpManager::update() {
+void PumpManager::update(unsigned long syncro_time_millis) {
     // update which pumps are currently running
-    this->pumps[0].is_running = (digitalRead(INPUT_PUMP_1_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
-    this->pumps[1].is_running = (digitalRead(INPUT_PUMP_2_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
-    this->pumps[2].is_running = (digitalRead(INPUT_PUMP_3_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
-    this->pumps[3].is_running = (digitalRead(INPUT_PUMP_4_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
-    this->pumps[4].is_running = (digitalRead(INPUT_PUMP_5_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
-    this->pumps[5].is_running = (digitalRead(INPUT_PUMP_6_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->update_pumps(syncro_time_millis);
+    this->update_level_sensors(syncro_time_millis);
 
-    unsigned long currentTimeMillis = millis();
+    short should_run_duty = this->should_run_duty(syncro_time_millis);
+
     for(int i = 0; i < MAX_PUMPS; i++) {
+
+        if(should_run_duty == 1 && this->pumps[i].is_duty) {
+            // duty pumps need to be started
+            this->start_pump(&(this->pumps[i]), syncro_time_millis);
+        } else if(should_run_duty == 0) {
+            // all pumps need to be stopped
+            this->stop_pump(&(this->pumps[i]), syncro_time_millis);
+        }
+
         
         // if the pump has not been started then we do not need to concern ourselves with its state
         if(!this->pumps[i].is_started)
             continue;
 
         // the MAXIMUM_START_UP_TIME must be allowed to pass before we can assume the pump has failed
-        if(this->pumps[i].is_running || this->pumps[i].time_started + MAXIMUM_START_UP_TIME > currentTimeMillis)
+        if(this->pumps[i].is_running || syncro_time_millis - this->pumps[i].time_started > (unsigned long) MAXIMUM_START_UP_TIME)
             continue;
 
         // at this point we can safely assume that the pump has not started and the maximum start-up time has passed.
@@ -40,12 +46,103 @@ void PumpManager::update() {
     }
 }
 
+void PumpManager::update_pumps(unsigned long syncro_time_millis) {
+    this->pumps[0].is_running = (digitalRead(INPUT_PUMP_1_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[1].is_running = (digitalRead(INPUT_PUMP_2_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[2].is_running = (digitalRead(INPUT_PUMP_3_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[3].is_running = (digitalRead(INPUT_PUMP_4_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[4].is_running = (digitalRead(INPUT_PUMP_5_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[5].is_running = (digitalRead(INPUT_PUMP_6_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+}
+
+void PumpManager::update_level_sensors(unsigned long syncro_time_millis) {   
+    this->level_sensors[0].previous_state = this->level_sensors[0].current_state;
+    this->level_sensors[1].previous_state = this->level_sensors[1].current_state;
+    this->level_sensors[2].previous_state = this->level_sensors[2].current_state;
+    this->level_sensors[3].previous_state = this->level_sensors[3].current_state;
+
+    this->level_sensors[0].current_state = digitalRead(LEVEL_SENSOR_LOW_PIN);
+    this->level_sensors[1].current_state = digitalRead(LEVEL_SENSOR_LEVEL_1_PIN);
+    this->level_sensors[2].current_state = digitalRead(LEVEL_SENSOR_LEVEL_2_PIN);
+    this->level_sensors[3].current_state = digitalRead(LEVEL_SENSOR_LEVEL_3_PIN);
 
 
+    if(this->level_sensors[0].current_state == PROBE_SIGNAL_PIN_ON) {
+        this->level_sensors[0].time_last_on = syncro_time_millis;
+    } else {
+        this->level_sensors[0].time_last_off = syncro_time_millis;
+    }
 
-void PumpManager::start_pump(Pump *pump, unsigned long current_time_millis) {
-    if(current_time_millis == 0) {
-        current_time_millis = millis();
+
+    if(this->level_sensors[1].current_state == PROBE_SIGNAL_PIN_ON) {
+        this->level_sensors[1].time_last_on = syncro_time_millis;
+    } else {
+        this->level_sensors[1].time_last_off = syncro_time_millis;
+    }
+
+
+    if(this->level_sensors[2].current_state == PROBE_SIGNAL_PIN_ON) {
+        this->level_sensors[2].time_last_on = syncro_time_millis;
+    } else {
+        this->level_sensors[2].time_last_off = syncro_time_millis;
+    }
+
+
+    if(this->level_sensors[3].current_state == PROBE_SIGNAL_PIN_ON) {
+        this->level_sensors[3].time_last_on = syncro_time_millis;
+    } else {
+        this->level_sensors[3].time_last_off = syncro_time_millis;
+    }
+
+}
+
+short PumpManager::should_run_duty(unsigned long syncro_time_millis) {
+
+    bool is_low_sensor_active = (this->level_sensors[0].current_state == PROBE_SIGNAL_PIN_ON 
+                                 && syncro_time_millis - this->level_sensors[0].time_last_off > LEVEL_SENSOR_DELAY_TIME);
+
+    bool is_low_sensor_inactive = (this->level_sensors[0].current_state == PROBE_SIGNAL_PIN_OFF
+                                 && syncro_time_millis - this->level_sensors[0].time_last_on > LEVEL_SENSOR_DELAY_TIME);
+    
+
+    bool is_high_sensor_active = (this->level_sensors[1].current_state == PROBE_SIGNAL_PIN_ON 
+                                 && syncro_time_millis - this->level_sensors[1].time_last_off > LEVEL_SENSOR_DELAY_TIME);
+
+    bool is_high_sensor_inactive = (this->level_sensors[1].current_state == PROBE_SIGNAL_PIN_OFF
+                                 && syncro_time_millis - this->level_sensors[1].time_last_on > LEVEL_SENSOR_DELAY_TIME);
+
+    // check if both floats are inactive
+    if(is_low_sensor_inactive && is_high_sensor_inactive) {
+        #ifdef DEBUG
+            Serial.println("High & Low OFF - should stop all pumps");
+        #endif
+
+        return 0;
+    }
+
+    if(is_low_sensor_active && is_high_sensor_active) {
+         #ifdef DEBUG
+            Serial.println("High & Low ON - should start duty pumps");
+        #endif
+
+        return 1;
+    }
+
+    return -1;
+}
+
+
+void PumpManager::start_pump(Pump *pump, unsigned long syncro_time_millis) {
+    if(pump == nullptr) {
+        #ifdef DEBUG
+            Serial.println("PumpManager::start_pump - requested start pump but nullptr passed");
+        #endif
+
+        return;
+    }
+
+    if(syncro_time_millis == 0) {
+        syncro_time_millis = millis();
     }
 
     if(pump->output_enable_pin < 0) {
@@ -61,17 +158,32 @@ void PumpManager::start_pump(Pump *pump, unsigned long current_time_millis) {
                 Serial.println("PumpManager::start_pump - pump already started... continuing anyway");
         #endif
     } else {
-        pump->time_started = current_time_millis;
+        pump->time_started = syncro_time_millis;
     }
+
+
+    if(pump->is_replaced && pump->replacement_enable_pin >= 0) {
+        PumpManager::start_pump(this->get_pump_by_enable_pin(pump->output_enable_pin), syncro_time_millis);
+        return;
+    }
+
 
     digitalWrite(pump->output_enable_pin, PUMP_ENABLE_PIN_ON);
     pump->is_started = true;
     
 } 
 
-void PumpManager::stop_pump(Pump *pump, unsigned long current_time_millis) {
-    if(current_time_millis == 0) {
-        current_time_millis = millis();
+void PumpManager::stop_pump(Pump *pump, unsigned long syncro_time_millis) {
+    if(pump == nullptr) {
+        #ifdef DEBUG
+            Serial.println("PumpManager::stop_pump - requested stop pump but nullptr passed");
+        #endif
+
+        return;
+    }
+
+    if(syncro_time_millis == 0) {
+        syncro_time_millis = millis();
     }
 
     if(pump->output_enable_pin < 0) {
@@ -87,15 +199,22 @@ void PumpManager::stop_pump(Pump *pump, unsigned long current_time_millis) {
                 Serial.println("PumpManager::stop_pump - pump already stopped... continuing anyway");
         #endif
     } else {
-        pump->time_stopped = current_time_millis;
+        pump->time_stopped = syncro_time_millis;
     }
 
     digitalWrite(pump->output_enable_pin, PUMP_ENABLE_PIN_OFF);
     pump->is_started = false;
+
+
+
+    if(pump->is_replaced && pump->replacement_enable_pin >= 0) {
+        this->stop_pump(this->get_pump_by_enable_pin(pump->replacement_enable_pin), syncro_time_millis);
+        return;
+    }
     
 }
 
-bool PumpManager::add_pump(Pump pump) {
+bool PumpManager::add_pump(Pump &pump) {
     // if max pump limit is reached then we cannot add another
     if(num_assigned_pumps >= MAX_PUMPS) {
         #ifdef DEBUG
@@ -154,6 +273,18 @@ bool PumpManager::add_pump(Pump pump) {
 
     return true;
 }
+
+
+ Pump* PumpManager::get_pump_by_enable_pin(short enable_pin) {
+
+     for(unsigned short i = 0; i < MAX_PUMPS; i++) {
+         if(this->pumps[i].output_enable_pin != enable_pin) {
+             return &(this->pumps[i]);
+         }
+     }
+
+     return nullptr;
+ }
 
 
 unsigned int PumpManager::get_all_duty_pumps(Pump *pumps_buffer) {

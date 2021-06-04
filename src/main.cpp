@@ -49,6 +49,8 @@ void setup() {
   standby_pump.is_assist = false;
   standby_pump.is_standby = true;
 
+  
+
 }
 
 
@@ -74,7 +76,9 @@ void print_pump_info(Pump &pump) {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  pumpManager.update();
+  unsigned long current_time_millis = millis();
+
+  pumpManager.update(current_time_millis);
 
   bool low_probe_active = digitalRead(LEVEL_SENSOR_LOW_PIN);
   bool high_probe_active = digitalRead(LEVEL_SENSOR_LEVEL_1_PIN);
@@ -82,7 +86,7 @@ void loop() {
 
   duty_pump.is_running = (digitalRead(INPUT_PUMP_1_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
 
-  unsigned long current_time_millis = millis();
+  
 
   if(low_probe_active == PROBE_SIGNAL_PIN_OFF) {
     low_probe_time_last_high = current_time_millis;
