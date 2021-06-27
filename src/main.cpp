@@ -159,6 +159,7 @@ void loop() {
       duty_has_failed = true;
       duty_experienced_fault = true;
       
+      digitalWrite(OUTPUT_TELEMETRY_ACTIVATE_PIN, TELEMETRY_SIGNAL_PIN_ON);
       
     } else if(!duty_experienced_fault && duty_retry_attempts < 3) {
       Serial.println("Stopping standby");
@@ -172,6 +173,8 @@ void loop() {
       Serial.println("Both water level probes deactived... stopping both pumps...");
       pumpManager.stop_pump(&duty_pump, current_time_millis);
       pumpManager.stop_pump(&standby_pump, current_time_millis);
+
+      digitalWrite(OUTPUT_TELEMETRY_ACTIVATE_PIN, TELEMETRY_SIGNAL_PIN_OFF);
   }
 
 
