@@ -13,10 +13,12 @@ class PumpManager {
         unsigned int get_all_assist_pumps(Pump *pumps_buffer, short assist_group);
         unsigned int get_all_standby_pumps(Pump *pumps_buffer);
 
+        Pump get_availabe_standby_pump();
+
         Pump* get_pump_by_enable_pin(short enable_pin);
 
-        void start_pump(Pump *pump, unsigned long syncro_time_millis);
-        void stop_pump(Pump *pump, unsigned long syncro_time_millis);
+        bool start_pump(Pump *pump, unsigned long syncro_time_millis);
+        bool stop_pump(Pump *pump, unsigned long syncro_time_millis);
 
         void update(unsigned long syncro_time_millis);
 

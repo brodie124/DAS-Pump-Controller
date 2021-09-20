@@ -32,12 +32,12 @@ void PumpManager::update(unsigned long syncro_time_millis) {
             continue;
 
         // the MAXIMUM_START_UP_TIME must be allowed to pass before we can assume the pump has failed
-        if(this->pumps[i].is_running || syncro_time_millis - this->pumps[i].time_started > (unsigned long) MAXIMUM_START_UP_TIME)
+        if(this->pumps[i].is_running || syncro_time_millis - this->pumps[i].time_started < (unsigned long) MAXIMUM_START_UP_TIME)
             continue;
 
         // at this point we can safely assume that the pump has not started and the maximum start-up time has passed.
         // we must now check if the pump has already been replaced by another pump... if it has then we do not care
-        if(this->pumps[i].is_replaced && this->pumps[i].replacement_enable_pin >= 0)
+        if(this->pumps[i].has_failed && this->pumps[i].replacement_output_enable_pin >= 0)
             continue; 
 
         
@@ -132,13 +132,13 @@ short PumpManager::should_run_duty(unsigned long syncro_time_millis) {
 }
 
 
-void PumpManager::start_pump(Pump *pump, unsigned long syncro_time_millis) {
+bool PumpManager::start_pump(Pump *pump, unsigned long syncro_time_millis) {
     if(pump == nullptr) {
         #ifdef DEBUG
             Serial.println("PumpManager::start_pump - requested start pump but nullptr passed");
         #endif
 
-        return;
+        return false;
     }
 
     if(syncro_time_millis == 0) {
@@ -150,7 +150,7 @@ void PumpManager::start_pump(Pump *pump, unsigned long syncro_time_millis) {
             Serial.println("PumpManager::start_pump - pump not configured properly...");
         #endif
 
-        return;
+        return false;
     }
 
     if(pump->is_started) {
@@ -162,24 +162,25 @@ void PumpManager::start_pump(Pump *pump, unsigned long syncro_time_millis) {
     }
 
 
-    if(pump->is_replaced && pump->replacement_enable_pin >= 0) {
+    if(pump->has_failed) {
         PumpManager::start_pump(this->get_pump_by_enable_pin(pump->output_enable_pin), syncro_time_millis);
-        return;
+        return false;
     }
 
 
     digitalWrite(pump->output_enable_pin, PUMP_ENABLE_PIN_ON);
     pump->is_started = true;
     
+    return true;
 } 
 
-void PumpManager::stop_pump(Pump *pump, unsigned long syncro_time_millis) {
+bool PumpManager::stop_pump(Pump *pump, unsigned long syncro_time_millis) {
     if(pump == nullptr) {
         #ifdef DEBUG
             Serial.println("PumpManager::stop_pump - requested stop pump but nullptr passed");
         #endif
 
-        return;
+        return false;
     }
 
     if(syncro_time_millis == 0) {
@@ -191,7 +192,7 @@ void PumpManager::stop_pump(Pump *pump, unsigned long syncro_time_millis) {
             Serial.println("PumpManager::stop_pump - pump not configured properly...");
         #endif
 
-        return;
+        return false;
     }
 
     if(!pump->is_started) {
@@ -205,13 +206,12 @@ void PumpManager::stop_pump(Pump *pump, unsigned long syncro_time_millis) {
     digitalWrite(pump->output_enable_pin, PUMP_ENABLE_PIN_OFF);
     pump->is_started = false;
 
-
-
-    if(pump->is_replaced && pump->replacement_enable_pin >= 0) {
-        this->stop_pump(this->get_pump_by_enable_pin(pump->replacement_enable_pin), syncro_time_millis);
-        return;
+    if(pump->has_failed && pump->replacement_output_enable_pin >= 0) {
+        this->stop_pump(this->get_pump_by_enable_pin(pump->replacement_output_enable_pin), syncro_time_millis);
+        return false;
     }
     
+    return true;
 }
 
 bool PumpManager::add_pump(Pump &pump) {
@@ -342,3 +342,13 @@ unsigned int PumpManager::get_all_standby_pumps(Pump *pumps_buffer) {
     return num_pumps_returned;
 }
 
+
+Pump PumpManager::get_availabe_standby_pump() {
+    for(unsigned int i = 0; i < this->num_assigned_pumps; i++) {
+        if(!this->pumps[i].is_standby || this->pumps[i].replacing_output_enable_pin >= 0) {
+            continue;
+        }
+
+        
+    }
+}

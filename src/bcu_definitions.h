@@ -1,7 +1,7 @@
 #ifndef BCU_DEFINITIONS
 #define BCU_DEFINITIONS
 
-#define DEBUG true
+// #define DEBUG true
 
 #define MAX_PUMPS 6
 #define MAX_LEVEL_SENSORS 4
@@ -32,13 +32,13 @@ struct Pump {
     bool is_started;
     bool is_running;
 
-    // has this pump been replaced?
-    bool is_replaced;
-    short replacement_enable_pin;
+    // has the pump failed?
+    bool has_failed;
+    short replacement_output_enable_pin;
+    short replacing_output_enable_pin;
 
-    // has this pump replaced another pump?
-    bool is_replacing;
-    short replacing_enable_pin;
+    // when was the running signal last active?
+    unsigned long time_is_running_last_active;
     
     // when was this pump last started and when was this pump last started?
     unsigned long time_started;

@@ -15,11 +15,10 @@ Pump* get_default_struct_pump() {
         .is_started = false,
         .is_running = false,
 
-        .is_replaced = false,
-        .replacement_enable_pin = -1,
+        .has_failed = false,
+        .replacement_output_enable_pin = -1,
 
-        .is_replacing = false,
-        .replacing_enable_pin = -1,
+        .time_is_running_last_active = 0,
 
         .time_started = 0,
         .time_stopped = 0

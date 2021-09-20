@@ -33,17 +33,17 @@
 #define OUTPUT_PUMP_2_ENABLE_PIN 15
 #define INPUT_PUMP_2_RUNNING_PIN 16
 
-#define OUTPUT_PUMP_3_ENABLE_PIN 0
-#define INPUT_PUMP_3_RUNNING_PIN 0
+#define OUTPUT_PUMP_3_ENABLE_PIN 17
+#define INPUT_PUMP_3_RUNNING_PIN 18
 
-#define OUTPUT_PUMP_4_ENABLE_PIN 0
-#define INPUT_PUMP_4_RUNNING_PIN 0
+#define OUTPUT_PUMP_4_ENABLE_PIN 19
+#define INPUT_PUMP_4_RUNNING_PIN 20
 
-#define OUTPUT_PUMP_5_ENABLE_PIN 0
-#define INPUT_PUMP_5_RUNNING_PIN 0
+#define OUTPUT_PUMP_5_ENABLE_PIN 21
+#define INPUT_PUMP_5_RUNNING_PIN 22
 
-#define OUTPUT_PUMP_6_ENABLE_PIN 0
-#define INPUT_PUMP_6_RUNNING_PIN 0
+#define OUTPUT_PUMP_6_ENABLE_PIN 23
+#define INPUT_PUMP_6_RUNNING_PIN 24
 
 #define OUTPUT_TELEMETRY_ACTIVATE_PIN A11
 
@@ -53,6 +53,10 @@
 #define PUMP_RUNNING_PIN_ON LOW
 #define PUMP_RUNNING_PIN_OFF HIGH
 
+
+// these have been inverted to trick the box into thinking the probes are ACTIVE
+// when they are unplugged. this was done for the NMCN job @ Balderton (14/07/2021).
+// reverted (05-09-21).
 #define PROBE_SIGNAL_PIN_ON LOW
 #define PROBE_SIGNAL_PIN_OFF HIGH
 
