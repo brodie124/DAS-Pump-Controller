@@ -34,6 +34,8 @@ struct Pump {
 
     // has the pump failed?
     bool has_failed;
+
+    // which pump is replacing this one? vs which pump has this one replaced?
     short replacement_output_enable_pin;
     short replacing_output_enable_pin;
 

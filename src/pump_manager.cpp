@@ -349,6 +349,9 @@ Pump PumpManager::get_availabe_standby_pump() {
             continue;
         }
 
-        
+        return this->pumps[i];
     }
+
+    // if we have reached this point then there are no available standby pumps.
+    // are there any assist pumps available?
 }
