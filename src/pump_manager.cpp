@@ -13,8 +13,12 @@ void PumpManager::update(unsigned long syncro_time_millis) {
     // update which pumps are currently running
     this->update_pumps(syncro_time_millis);
     this->update_level_sensors(syncro_time_millis);
+    this->update_system_state(syncro_time_millis);
 
     short should_run_duty = this->should_run_duty(syncro_time_millis);
+
+    short num_pumps_required = 0;
+    short num_pumps_available = this->num_assigned_pumps;
 
     for(int i = 0; i < MAX_PUMPS; i++) {
 
@@ -46,6 +50,45 @@ void PumpManager::update(unsigned long syncro_time_millis) {
     }
 }
 
+void PumpManager::update_system_state(unsigned long syncro_time_millis) {
+
+    int state = NONE;
+
+    // if LOW and HIGH are both OFF then NO PUMPS need to be called
+    if(this->level_sensors[LOW_FLOAT].current_state == PROBE_SIGNAL_PIN_OFF
+        && this->level_sensors[HIGH_FLOAT].current_state == PROBE_SIGNAL_PIN_OFF) {
+        
+        state = NONE;
+
+    };
+
+    // if LOW and HIGH are both ON then DUTY needs to be called
+    // if(this->level_s)
+    if(this->level_sensors[LOW_FLOAT].current_state == PROBE_SIGNAL_PIN_ON
+        && this->level_sensors[HIGH_FLOAT].current_state == PROBE_SIGNAL_PIN_ON) {
+        
+        state = state | DUTY;
+
+    };
+
+    // if ASSIST_1 is ON then ASSIST_1 needs to be called
+    if(this->level_sensors[2].current_state == PROBE_SIGNAL_PIN_ON) {
+
+        state = state | ASSIST_1;
+
+    }
+
+    // if ASSIST_2 is ON then ASSIST_2 needs to be called
+    if(this->level_sensors[3].current_state == PROBE_SIGNAL_PIN_ON) {
+
+        state = state | ASSIST_2;
+
+    }
+
+    this->system_state = state;
+
+}
+
 void PumpManager::update_pumps(unsigned long syncro_time_millis) {
     this->pumps[0].is_running = (digitalRead(INPUT_PUMP_1_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
     this->pumps[1].is_running = (digitalRead(INPUT_PUMP_2_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
@@ -61,58 +104,44 @@ void PumpManager::update_level_sensors(unsigned long syncro_time_millis) {
     this->level_sensors[2].previous_state = this->level_sensors[2].current_state;
     this->level_sensors[3].previous_state = this->level_sensors[3].current_state;
 
-    this->level_sensors[0].current_state = digitalRead(LEVEL_SENSOR_LOW_PIN);
-    this->level_sensors[1].current_state = digitalRead(LEVEL_SENSOR_LEVEL_1_PIN);
-    this->level_sensors[2].current_state = digitalRead(LEVEL_SENSOR_LEVEL_2_PIN);
-    this->level_sensors[3].current_state = digitalRead(LEVEL_SENSOR_LEVEL_3_PIN);
+    this->level_sensors[0].pin_state = digitalRead(LEVEL_SENSOR_LOW_PIN);
+    this->level_sensors[1].pin_state = digitalRead(LEVEL_SENSOR_LEVEL_1_PIN);
+    this->level_sensors[2].pin_state = digitalRead(LEVEL_SENSOR_LEVEL_2_PIN);
+    this->level_sensors[3].pin_state = digitalRead(LEVEL_SENSOR_LEVEL_3_PIN);
 
 
-    if(this->level_sensors[0].current_state == PROBE_SIGNAL_PIN_ON) {
-        this->level_sensors[0].time_last_on = syncro_time_millis;
-    } else {
-        this->level_sensors[0].time_last_off = syncro_time_millis;
+    for(unsigned int i = 0; i < MAX_LEVEL_SENSORS; i++) {
+        if(this->level_sensors[i].pin_state == PROBE_SIGNAL_PIN_ON) {
+            this->level_sensors[i].time_last_on = syncro_time_millis;
+        } else {
+            this->level_sensors[i].time_last_off = syncro_time_millis;
+        }
+
+        if(this->level_sensors[i].pin_state == PROBE_SIGNAL_PIN_ON && syncro_time_millis - this->level_sensors[i].time_last_off > LEVEL_SENSOR_DEBOUNCE_TIME) {
+            #ifdef DEBUG
+                Serial.print("Level sensor ");
+                Serial.print(i);
+                Serial.print(" - now ON");
+            #endif
+
+            this->level_sensors[i].current_state = PROBE_SIGNAL_PIN_ON;
+        } else if(this->level_sensors[i].pin_state == PROBE_SIGNAL_PIN_OFF && syncro_time_millis - this->level_sensors[i].time_last_on > LEVEL_SENSOR_DEBOUNCE_TIME) {
+            #ifdef DEBUG
+                Serial.print("Level sensor ");
+                Serial.print(i);
+                Serial.print(" - now OFF");
+            #endif
+
+            this->level_sensors[i].current_state = PROBE_SIGNAL_PIN_OFF;
+        }
     }
-
-
-    if(this->level_sensors[1].current_state == PROBE_SIGNAL_PIN_ON) {
-        this->level_sensors[1].time_last_on = syncro_time_millis;
-    } else {
-        this->level_sensors[1].time_last_off = syncro_time_millis;
-    }
-
-
-    if(this->level_sensors[2].current_state == PROBE_SIGNAL_PIN_ON) {
-        this->level_sensors[2].time_last_on = syncro_time_millis;
-    } else {
-        this->level_sensors[2].time_last_off = syncro_time_millis;
-    }
-
-
-    if(this->level_sensors[3].current_state == PROBE_SIGNAL_PIN_ON) {
-        this->level_sensors[3].time_last_on = syncro_time_millis;
-    } else {
-        this->level_sensors[3].time_last_off = syncro_time_millis;
-    }
-
 }
 
 short PumpManager::should_run_duty(unsigned long syncro_time_millis) {
 
-    bool is_low_sensor_active = (this->level_sensors[0].current_state == PROBE_SIGNAL_PIN_ON 
-                                 && syncro_time_millis - this->level_sensors[0].time_last_off > LEVEL_SENSOR_DELAY_TIME);
-
-    bool is_low_sensor_inactive = (this->level_sensors[0].current_state == PROBE_SIGNAL_PIN_OFF
-                                 && syncro_time_millis - this->level_sensors[0].time_last_on > LEVEL_SENSOR_DELAY_TIME);
-    
-
-    bool is_high_sensor_active = (this->level_sensors[1].current_state == PROBE_SIGNAL_PIN_ON 
-                                 && syncro_time_millis - this->level_sensors[1].time_last_off > LEVEL_SENSOR_DELAY_TIME);
-
-    bool is_high_sensor_inactive = (this->level_sensors[1].current_state == PROBE_SIGNAL_PIN_OFF
-                                 && syncro_time_millis - this->level_sensors[1].time_last_on > LEVEL_SENSOR_DELAY_TIME);
-
     // check if both floats are inactive
-    if(is_low_sensor_inactive && is_high_sensor_inactive) {
+    if(this->level_sensors[LOW_FLOAT].current_state == PROBE_SIGNAL_PIN_OFF
+       && this->level_sensors[HIGH_FLOAT].current_state == PROBE_SIGNAL_PIN_OFF) {
         #ifdef DEBUG
             Serial.println("High & Low OFF - should stop all pumps");
         #endif
@@ -120,7 +149,8 @@ short PumpManager::should_run_duty(unsigned long syncro_time_millis) {
         return 0;
     }
 
-    if(is_low_sensor_active && is_high_sensor_active) {
+    if(this->level_sensors[LOW_FLOAT].current_state == PROBE_SIGNAL_PIN_ON
+       && this->level_sensors[HIGH_FLOAT].current_state == PROBE_SIGNAL_PIN_ON) {
          #ifdef DEBUG
             Serial.println("High & Low ON - should start duty pumps");
         #endif
@@ -343,15 +373,28 @@ unsigned int PumpManager::get_all_standby_pumps(Pump *pumps_buffer) {
 }
 
 
-Pump PumpManager::get_availabe_standby_pump() {
-    for(unsigned int i = 0; i < this->num_assigned_pumps; i++) {
-        if(!this->pumps[i].is_standby || this->pumps[i].replacing_output_enable_pin >= 0) {
-            continue;
-        }
+Pump* PumpManager::get_availabe_standby_pump() {
+    if(num_standby_pumps > 0) {
+        for(unsigned int i = 0; i < this->num_assigned_pumps; i++) {
+            if(!this->pumps[i].is_standby || this->pumps[i].has_failed) {
+                continue;
+            }
 
-        return this->pumps[i];
+            return &this->pumps[i];
+        }
     }
 
     // if we have reached this point then there are no available standby pumps.
     // are there any assist pumps available?
+    if(num_assigned_pumps > 0) {
+        for(unsigned int i = 0; i < this->num_assigned_pumps; i++) {
+            if(!this->pumps[i].is_assist || this->pumps[i].has_failed) {
+                continue;
+            }   
+
+            return &this->pumps[i];
+        }
+    }
+
+    return nullptr;
 }
