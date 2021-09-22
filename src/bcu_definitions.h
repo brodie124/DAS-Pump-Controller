@@ -7,6 +7,7 @@
 #define MAX_LEVEL_SENSORS 4
 
 #define LEVEL_SENSOR_DEBOUNCE_TIME 10000
+#define PUMP_RUNNING_DEBOUNCE_TIME 5000
 
 // 8 minutes in millseconds
 #define MINIMUM_RUN_TIME 480000
@@ -23,6 +24,9 @@ struct Pump {
     // how do we turn this pump on and how do we know when this pump is running?
     short output_enable_pin;
     short input_running_pin;
+
+    // what is the current state of the input running pin?
+    bool input_running_pin_state;
 
     // is this pump a duty, standby OR assist pump?
     bool is_duty;

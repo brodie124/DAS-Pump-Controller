@@ -31,6 +31,7 @@ class PumpManager {
         short should_run_assist_one(unsigned long syncro_time_millis);
         short should_run_assist_two(unsigned long syncro_time_millis);
         
+        bool is_available(Pump &pump);
 
     private:
         Pump pumps[MAX_PUMPS];

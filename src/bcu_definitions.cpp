@@ -1,10 +1,14 @@
+#include <Arduino.h>
 #include "bcu_definitions.h"
+#include "pin_configuration.h"
 
 Pump* get_default_struct_pump() {
     
     return new Pump {
         .output_enable_pin = -1,
         .input_running_pin = -1,
+
+        .input_running_pin_state = PUMP_RUNNING_PIN_OFF,
 
         .is_duty = false,
         .is_assist = false,
@@ -13,7 +17,7 @@ Pump* get_default_struct_pump() {
         .assist_group = -1,
 
         .is_started = false,
-        .is_running = false,
+        .is_running = PUMP_RUNNING_PIN_OFF,
 
         .has_failed = false,
 
@@ -37,10 +41,10 @@ LevelSensor* get_default_struct_level_sensor() {
 
         .level = -1,
 
-        .pin_state = false,
+        .pin_state = PROBE_SIGNAL_PIN_OFF,
 
-        .current_state = false,
-        .previous_state = false,
+        .current_state = PROBE_SIGNAL_PIN_OFF,
+        .previous_state = PROBE_SIGNAL_PIN_OFF,
 
         .time_last_on = 0,
         .time_last_off = 0,

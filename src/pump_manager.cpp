@@ -90,12 +90,36 @@ void PumpManager::update_system_state(unsigned long syncro_time_millis) {
 }
 
 void PumpManager::update_pumps(unsigned long syncro_time_millis) {
-    this->pumps[0].is_running = (digitalRead(INPUT_PUMP_1_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
-    this->pumps[1].is_running = (digitalRead(INPUT_PUMP_2_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
-    this->pumps[2].is_running = (digitalRead(INPUT_PUMP_3_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
-    this->pumps[3].is_running = (digitalRead(INPUT_PUMP_4_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
-    this->pumps[4].is_running = (digitalRead(INPUT_PUMP_5_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
-    this->pumps[5].is_running = (digitalRead(INPUT_PUMP_6_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[0].input_running_pin_state = (digitalRead(INPUT_PUMP_1_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[1].input_running_pin_state = (digitalRead(INPUT_PUMP_2_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[2].input_running_pin_state = (digitalRead(INPUT_PUMP_3_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[3].input_running_pin_state = (digitalRead(INPUT_PUMP_4_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[4].input_running_pin_state = (digitalRead(INPUT_PUMP_5_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+    this->pumps[5].input_running_pin_state = (digitalRead(INPUT_PUMP_6_RUNNING_PIN) == PUMP_RUNNING_PIN_ON);
+
+    for(unsigned int i = 0; i < MAX_PUMPS; i++) {
+
+        if(this->pumps[i].input_running_pin_state) {
+            // if the pump is running then we should store the time we last saw the active signal (NOW)
+            this->pumps[i].time_is_running_last_active = syncro_time_millis;
+        } else {
+            // if the pump is not running then we should store the time we last didn't see  the active signal (NOW)
+            this->pumps[i].time_is_running_last_not_active = syncro_time_millis;
+        }
+
+        if(this->pumps[i].input_running_pin_state == PUMP_RUNNING_PIN_ON
+           && syncro_time_millis - this->pumps[i].time_is_running_last_not_active > PUMP_RUNNING_DEBOUNCE_TIME) {
+                // pump running signal has been ON for over the DEBOUNCE TIME
+                this->pumps[i].is_running = PUMP_RUNNING_PIN_ON;
+        }
+
+        if(this->pumps[i].input_running_pin_state == PUMP_RUNNING_PIN_OFF
+           && syncro_time_millis - this->pumps[i].time_is_running_last_active > PUMP_RUNNING_DEBOUNCE_TIME) {
+               // pump running signal has been OFF for over the DEBOUNCE TIME
+               this->pumps[i].is_running = PUMP_RUNNING_PIN_OFF;
+        }
+        
+    }
 }
 
 void PumpManager::update_level_sensors(unsigned long syncro_time_millis) {   
@@ -376,7 +400,7 @@ unsigned int PumpManager::get_all_standby_pumps(Pump *pumps_buffer) {
 Pump* PumpManager::get_availabe_standby_pump() {
     if(num_standby_pumps > 0) {
         for(unsigned int i = 0; i < this->num_assigned_pumps; i++) {
-            if(!this->pumps[i].is_standby || this->pumps[i].has_failed) {
+            if(!this->pumps[i].is_standby || !this->is_available(this->pumps[i])) {
                 continue;
             }
 
@@ -388,7 +412,7 @@ Pump* PumpManager::get_availabe_standby_pump() {
     // are there any assist pumps available?
     if(num_assigned_pumps > 0) {
         for(unsigned int i = 0; i < this->num_assigned_pumps; i++) {
-            if(!this->pumps[i].is_assist || this->pumps[i].has_failed) {
+            if(!this->pumps[i].is_assist || !this->is_available(this->pumps[i])) {
                 continue;
             }   
 
@@ -397,4 +421,8 @@ Pump* PumpManager::get_availabe_standby_pump() {
     }
 
     return nullptr;
+}
+
+bool PumpManager::is_available(Pump &pump) {
+    return (!pump.has_failed && pump.replacement_output_enable_pin < 0 && pump.replacing_output_enable_pin < 0);
 }
