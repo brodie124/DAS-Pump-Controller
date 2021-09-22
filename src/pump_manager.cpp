@@ -15,38 +15,84 @@ void PumpManager::update(unsigned long syncro_time_millis) {
     this->update_level_sensors(syncro_time_millis);
     this->update_system_state(syncro_time_millis);
 
-    short should_run_duty = this->should_run_duty(syncro_time_millis);
+    // short should_run_duty = this->should_run_duty(syncro_time_millis);
 
     short num_pumps_required = 0;
     short num_pumps_available = this->num_assigned_pumps;
 
     for(int i = 0; i < MAX_PUMPS; i++) {
+        bool is_needed = false;
 
-        if(should_run_duty == 1 && this->pumps[i].is_duty) {
-            // duty pumps need to be started
+        if((this->system_state & DUTY) == DUTY && this->pumps[i].is_duty) {
+            // duty pumps need to be counted and then started
+            if(!is_needed) {
+                num_pumps_required++;
+                is_needed = true;
+            }
+            
             this->start_pump(&(this->pumps[i]), syncro_time_millis);
-        } else if(should_run_duty == 0) {
-            // all pumps need to be stopped
+        }
+
+
+        if((this->system_state & ASSIST_1) == ASSIST_1 && this->pumps[i].is_assist 
+           && (this->pumps[i].assist_group < 0 || this->pumps[i].assist_group == 1)) {
+                // system state requires ASSIST_1...
+                // this pump either has not assist group or is assist group 1
+                // start this pump
+
+                if(!is_needed) {
+                    num_pumps_required++;
+                    is_needed = true;
+                }
+
+                this->start_pump(&(this->pumps[i]), syncro_time_millis);
+        }
+
+        if((this->system_state & ASSIST_2) == ASSIST_2 && this->pumps[i].is_assist
+            && (this->pumps[i].assist_group < 0 || this->pumps[i].assist_group == 2)) {
+            // system state requires ASSIST_2...
+            // this pump either has no assist group or is assist group 2
+            // start this pump
+
+            if(!is_needed) {
+                num_pumps_required++;
+                is_needed = true;
+            }
+
+            this->start_pump(&(this->pumps[i]), syncro_time_millis);
+        }
+
+        
+        if(!is_needed) {
             this->stop_pump(&(this->pumps[i]), syncro_time_millis);
         }
 
         
         // if the pump has not been started then we do not need to concern ourselves with its state
-        if(!this->pumps[i].is_started)
+        if(!this->pumps[i].is_started) {
             continue;
+        }
 
         // the MAXIMUM_START_UP_TIME must be allowed to pass before we can assume the pump has failed
         if(this->pumps[i].is_running || syncro_time_millis - this->pumps[i].time_started < (unsigned long) MAXIMUM_START_UP_TIME)
             continue;
 
-        // at this point we can safely assume that the pump has not started and the maximum start-up time has passed.
-        // we must now check if the pump has already been replaced by another pump... if it has then we do not care
-        if(this->pumps[i].has_failed && this->pumps[i].replacement_output_enable_pin >= 0)
-            continue; 
+
+        this->pumps[i].has_failed = true;
+
+        // if the replacement_output_enable_pin is already specified then we know that this pump has already been replaced
+        if(this->pumps[i].replacement_output_enable_pin >= 0) 
+            continue;
+        
+
+        // stop the failed pump... find an alternative... start the alternative
+        this->stop_pump(&this->pumps[i], syncro_time_millis);
+
+        // now to find an alternative    
+        Pump *alternative = this->get_availabe_standby_pump();
 
         
-        // find an available replacement pump 
-        // TODO: this
+
     }
 }
 
